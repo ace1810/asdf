@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Aerial View of Dhaka</title>
+  <style>
+    html, body {
+      height: 100%;
+      margin: 0;
+    }
+    #map {
+      height: 100%;
+      width: 100%;
+    }
+    .info-window {
+      background-color: white;
+      border-radius: 5px;
+      padding: 10px;
+      font-family: sans-serif;
+    }
+  </style>
+</head>
+<body>
+  <div id="map"></div>
+
+  <script>
+    function initMap() {
+      const map = new google.maps.Map(document.getElementById("map"), {
+        center: { lat: 23.8103, lng: 90.4125 }, 
+        zoom: 16, 
+        mapTypeId: "satellite", 
+      });
+
+      // Request an aerial view video for Dhaka, Bangladesh (This part might need Google's special APIs)
+      // const aerialViewRequest = {
+      //   location: { lat: 23.8103, lng: 90.4125 }, 
+      //   radius: 50, // Radius in meters around the location
+      //   heading: 90, // Optional: Initial heading of the camera
+      //   pitch: -45, // Optional: Initial pitch of the camera (looking down)
+      // };
+
+      // Fetch air quality data from OpenAQ API
+      fetch('https://api.openaq.org/v2/latest?coordinates=23.8103,90.4125&radius=1000&limit=1')
+        .then(response => response.json())
+        .then(data => {
+          if (data.results && data.results.length > 0) {
+            const airQualityData = data.results[0];
+            const location = airQualityData.coordinates;
+            const measurements = airQualityData.measurements;
+
+            // Create a marker on the map
+            const marker = new google.maps.Marker({
+              position: { lat: location.latitude, lng: location.longitude },
+              map: map,
+            });
+
+            // Create an info window to display air quality data
+            const infoWindowContent = `
+              <div class="info-window">
+                <h3>Air Quality</h3>
+                <ul>
+                  ${measurements.map(m => `<li>${m.parameter}: ${m.value} ${m.unit}</li>`).join('')}
+                </ul>
+              </div>
+            `;
+            const infoWindow = new google.maps.InfoWindow({
+              content: infoWindowContent,
+            });
+
+            // Open the info window when the marker is clicked
+            marker.addListener("click", () => {
+              infoWindow.open({
+                anchor: marker,
+                map,
+                shouldFocus: false,
+              });
+            });
+          } else {
+            console.log('No air quality data found for this location.');
+          }
+        })
+        .catch(error => {
+          console.error('Error fetching air quality data:', error);
+        });
+    }
+  </script>
+
+  <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBn5-X_JHuy8qDYMXFByyxBvTkmM-owNtw&callback=initMap" 
+          async defer></script> 
+</body>
+</html>
